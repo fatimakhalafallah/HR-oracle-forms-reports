@@ -1,0 +1,1047 @@
+PACKAGE BODY                         PAYROLL_PKG
+AS
+ FUNCTION SALARY (EMP_ID_PAR                   IN  NUMBER,
+                                              PAY_DATE_PAR          IN DATE,
+											  USER_PAR                    IN NUMBER,
+											   OPERATION_TYPE_FLAG IN NUMBER,
+											    subgross_salary_out           OUT NUMBER,
+                                                 gross_salary_out           OUT NUMBER,
+
+                                                 tot_ded_out                      OUT NUMBER,
+                                                 tot_loan_out                   OUT NUMBER,
+                                                 sub_net   out number,
+                                                     net_salary_out            OUT NUMBER)
+		RETURN NUMBER
+		IS    SAL NUMBER;
+			subgross_salary NUMBER;
+		gross_salary NUMBER;
+
+                       tot_ded  NUMBER;
+                       tot_loan NUMBER;
+                       net_salary NUMBER;
+                       sub_net1  number;
+		BEGIN
+		DECLARE  CURSOR payroll IS SELECT
+         EMPLOYEE_NO,
+         EMPLOYEE_NAME,
+       NVL(DATE_OF_JOIN,SYSDATE) DATE_OF_JOIN,
+         NVL(GROSS_SALARY,0) GROSS_SALARY,
+         NVL(gross_comp,0) gross_comp,
+         NVL(GRADES_GRADE_NO,0) GRADES_GRADE_NO,
+         NVL(JOB_NO,0) JOB_NO,
+         NVL(HIRE_TYPE,0) HIRE_TYPE,
+         NVL(TAX_FREE,0) TAX_FREE,
+         NVL(SOCIAL_FREE,0) SOCIAL_FREE,
+         NVL(PREVIOUS_EXPERIENCE,0) PREVIOUS_EXPERIENCE,
+         NVL(division_no,0)division,
+         NVL(dept_departmrnt_no,1) dept,
+         NVL(section_no,0)sectionS ,
+		 NVL(A_LOCATION,0)ALLOCATION,
+         NVL(position_position_no,0)position ,
+         ON_PAYROLL ,RELEGIOUS,
+		 BANK_BRANCH_NO ,
+		 BANK_ACCOUNT_NO,
+         TRUNC(MONTHS_BETWEEN(SYSDATE,NVL(BIRTH_DATE,SYSDATE)) / 12) YRS ,
+         NVL(EMPLOYMENT_place,'K') LOCATION
+  FROM   EMPLOYEES  WHERE EMPLOYEE_NO=EMP_ID_PAR;
+  BEGIN
+  FOR REC IN payroll LOOP
+  SAL:=GEN_TRAIL (REC.HIRE_TYPE             ,
+                       REC.GRADES_GRADE_NO       ,
+                      REC. LOCATION              ,
+                      REC. JOB_NO                ,
+                     REC.RELEGIOUS             ,
+                       REC.GROSS_SALARY           ,
+                        REC.GROSS_comp          ,
+                       REC.SOCIAL_FREE           ,
+                      REC. PREVIOUS_EXPERIENCE   ,
+                      REC. DATE_OF_JOIN       ,
+                      REC.YRS                    ,
+                     PAY_DATE_PAR         ,
+                     REC.EMPLOYEE_NO                ,
+                      REC.TAX_FREE ,
+                       OPERATION_TYPE_FLAG     ,
+                     TO_NUMBER(TO_CHAR(PAY_DATE_PAR,'MM')) ,
+                     TO_NUMBER(TO_CHAR(PAY_DATE_PAR,'YYYY')),
+                         REC.DIVISION,
+                         REC.DEPT,
+                         REC.SECTIONS,
+						 REC.ALLOCATION,
+                         REC.POSITION,
+                       USER_PAR,
+					   REC.BANK_BRANCH_NO,
+					   REC.BANK_ACCOUNT_NO,
+                         gross_salary ,
+						 subgross_salary ,
+                       tot_ded ,
+                       tot_loan,
+                       sub_net,
+                       net_salary    );
+                       subgross_salary_out :=subGROSS_SALARY;
+					   gross_salary_out :=GROSS_SALARY;
+
+                       tot_ded_out :=TOT_DED;
+                       tot_loan_out:= TOT_LOAN;
+                       sub_net:=sub_net1;
+                       net_salary_out:=NET_SALARY;
+					   END LOOP;
+					   					   RETURN (gross_salary_out );
+END;
+  END SALARY;
+		/************************************************************************************************************************/
+
+  FUNCTION GEN_TRAIL (HIRE_TYPE_PAR               IN     NUMBER,
+                       GRADES_GRADE_NO_PAR                        IN     NUMBER,
+                       LOCATION_PAR                                                 IN     CHAR,
+                       JOB_NO_PAR                                                    IN     NUMBER,
+                       RELEGIOUS_PAR                                             IN     CHAR,
+                       GROSS_SALAR_PAR                                     IN     NUMBER,
+                       GROSS_COMP_PAR                                       IN     NUMBER,
+                       SOCIAL_FREE_PAR                                        IN     NUMBER,
+                       PREVIOUS_EXPERIENCE_PAR                 IN     NUMBER,
+                       DATE_OF_JOIN_PAR                                      IN     DATE,
+                       NO_YRS                                                                IN     NUMBER,
+                       PAY_DATE_PAR                                               IN     DATE,
+                       EMP_ID_PAR                                                      IN     NUMBER,
+                       TAX_FREE_PAR                                                IN     NUMBER,
+                       OPERATION_TYPE_FLAG                              IN     NUMBER,
+                       M_NUM                          IN     NUMBER,
+                       Y_NUM                             IN     NUMBER,
+                       DIVISION_PAR                IN     NUMBER,
+                       DEPT_PAR                    IN     NUMBER,
+                       SECTION_PAR                 IN     NUMBER,
+					   ALLOCATION_PAR                 IN     NUMBER,
+                       POSITION_PAR                IN     NUMBER,
+					   USER_PAR                        IN  NUMBER,
+					   Bank_PAR                                                           IN NUMBER,
+					   BANK_ACCOUNT_PAR                           IN CHAR,
+					    subgross_salary_out               OUT NUMBER,
+                       gross_salary_out               OUT NUMBER,
+
+                       tot_ded_out                          OUT NUMBER,
+                       tot_loan_out                   OUT NUMBER,
+                       sub_net   out number,
+                       net_salary_out                  OUT NUMBER)
+
+      RETURN NUMBER
+   IS
+               subgross_salary_val     NUMBER(10,2):=0;
+                gross_salary_val     NUMBER(10,2):=0;
+
+				PAYROLL_ID                     NUMBER;
+				RESULT                           NUMBER:=0;
+				DEDFIX_VAL                NUMBER:=0;
+				SUB_NET_VAL   NUMBER:=0;
+				SUB_GROSS_VAL    NUMBER:=0;
+				LOAN_VAL                  NUMBER:=0;
+				     hire                           NUMBER;
+                                age                       number;
+
+   BEGIN
+IF OPERATION_TYPE_FLAG = 1
+
+      THEN
+	  begin
+         SELECT   PAY_PAYROLLS_SEQ.NEXTVAL INTO PAYROLL_ID FROM DUAL;
+      ------DEDUCT 90 SDG FROM AGE >=50--
+      begin
+                                select TRUNC(MONTHS_BETWEEN(SYSDATE,NVL(BIRTH_DATE,SYSDATE)) / 12)
+                                into age
+                                from EMPLOYEES  WHERE EMPLOYEE_NO=EMP_ID_PAR;
+
+								select  HIRE_TYPE into hire from employees where  EMPLOYEE_NO=EMP_ID_PAR;
+
+								                              if age >=50 and hire= 5  then
+
+
+    ------------------------------------
+         INSERT INTO PAY_PAYROLLS (ID,
+                                   PAY_DATE,
+                                   EMP_ID,
+                                   GROSS_SALARY,
+                                   PAYROLL_STATUS,
+                                   TR_DATE,
+                                   CREATED_USER,
+                                   CREATED_DATE,
+                                   PAY_MONTH,
+                                   PAY_YEAR,
+                                   CURRENCY_NO,
+                                   depart_no,comp_no,SECTION_NO,a_location,POSITION_NO,COMP_GROSS,BANK_BRN_NO,BANK_ACCOUNT_NO,HIRE_TYPE,tax,social)
+           VALUES   (PAYROLL_ID,
+                     PAY_DATE_PAR,
+                     EMP_ID_PAR,
+                     GROSS_SALAR_PAR,
+                     0,
+                     PAY_DATE_PAR,
+                     USER_PAR,
+                     SYSDATE,
+                     M_NUM,
+                    Y_NUM,
+                     1,
+                     DEPT_PAR   ,
+					 DIVISION_PAR,
+                     SECTION_PAR ,
+					ALLOCATION_PAR ,
+                     JOB_NO_PAR ,
+                   net_salary  (GROSS_SALAR_PAR,nvl(TAX_FREE_PAR,0)   ,nvl(SOCIAL_FREE_PAR,0) ),
+				   Bank_PAR        ,
+					   BANK_ACCOUNT_PAR,HIRE_TYPE_PAR    ,nvl(TAX_FREE_PAR,0)   ,nvl(SOCIAL_FREE_PAR,0)     );
+
+								---------------------------------------------------------------------------------------------------
+
+								elsif  age<50 then
+
+
+    ------------------------------------
+         INSERT INTO PAY_PAYROLLS (ID,
+                                   PAY_DATE,
+                                   EMP_ID,
+                                   GROSS_SALARY,
+                                   PAYROLL_STATUS,
+                                   TR_DATE,
+                                   CREATED_USER,
+                                   CREATED_DATE,
+                                   PAY_MONTH,
+                                   PAY_YEAR,
+                                   CURRENCY_NO,
+                                   depart_no,comp_no,SECTION_NO,a_location,POSITION_NO,COMP_GROSS,BANK_BRN_NO,BANK_ACCOUNT_NO,HIRE_TYPE,tax,social)
+           VALUES   (PAYROLL_ID,
+                     PAY_DATE_PAR,
+                     EMP_ID_PAR,
+                     GROSS_SALAR_PAR,
+                     0,
+                     PAY_DATE_PAR,
+                     USER_PAR,
+                     SYSDATE,
+                     M_NUM,
+                    Y_NUM,
+                     1,
+                     DEPT_PAR   ,
+					 DIVISION_PAR,
+                     SECTION_PAR ,
+					  ALLOCATION_PAR ,
+                     JOB_NO_PAR ,
+                   net_salary  (GROSS_SALAR_PAR,nvl(TAX_FREE_PAR,0)   ,nvl(SOCIAL_FREE_PAR,0) ),
+				   Bank_PAR        ,
+					   BANK_ACCOUNT_PAR,HIRE_TYPE_PAR    ,nvl(TAX_FREE_PAR,0)   ,nvl(SOCIAL_FREE_PAR,0)     );
+                elsif  age>= 50 then
+                INSERT INTO PAY_PAYROLLS (ID,
+                                   PAY_DATE,
+                                   EMP_ID,
+                                   GROSS_SALARY,
+                                   PAYROLL_STATUS,
+                                   TR_DATE,
+                                   CREATED_USER,
+                                   CREATED_DATE,
+                                   PAY_MONTH,
+                                   PAY_YEAR,
+                                   CURRENCY_NO,
+                                   depart_no,comp_no,SECTION_NO,a_location,POSITION_NO,COMP_GROSS,BANK_BRN_NO,BANK_ACCOUNT_NO,HIRE_TYPE,tax,social)
+           VALUES   (PAYROLL_ID,
+                     PAY_DATE_PAR,
+                     EMP_ID_PAR,
+                     GROSS_SALAR_PAR,
+                     0,
+                     PAY_DATE_PAR,
+                     USER_PAR,
+                     SYSDATE,
+                     M_NUM,
+                    Y_NUM,
+                     1,
+                     DEPT_PAR   ,
+					 DIVISION_PAR,
+                     SECTION_PAR ,
+					 ALLOCATION_PAR ,
+                     JOB_NO_PAR ,
+                   (net_salary  (GROSS_SALAR_PAR,nvl(TAX_FREE_PAR,0)   ,nvl(SOCIAL_FREE_PAR,0) )),
+				   Bank_PAR        ,
+					   BANK_ACCOUNT_PAR,HIRE_TYPE_PAR    ,nvl(TAX_FREE_PAR,0)   ,nvl(SOCIAL_FREE_PAR,0)     );
+                                           end if;
+
+                                           end;
+
+    ----------------------------
+
+
+				   end;
+				        END IF;
+commit;
+coop(     EMP_ID_PAR, PAY_DATE_PAR);
+  /***********************/
+
+	    subGROSS_SALARY_VAL :=
+         GET_subGROSS_SAL (
+                        PAYROLL_ID,
+                        EMP_ID_PAR,
+                           OPERATION_TYPE_FLAG,
+						    PAY_DATE_PAR ,
+							 DIVISION_PAR,SOCIAL_FREE_PAR        ,  tax_FREE_PAR     );
+      subGROSS_SALARY_out :=subGROSS_SALARY_VAL;
+	  commit;
+
+	  /********************************/
+  GROSS_SALARY_VAL :=
+         GET_GROSS_SAL (
+                        PAYROLL_ID,
+                        EMP_ID_PAR,
+                           OPERATION_TYPE_FLAG,
+						    PAY_DATE_PAR ,
+							 DIVISION_PAR,SOCIAL_FREE_PAR        ,  tax_FREE_PAR     );
+      GROSS_SALARY_out :=GROSS_SALARY_VAL;
+	  commit;
+
+	  /********************************/
+	  DEDFIX_VAL:=
+	     GET_DEDFIX (
+                        PAYROLL_ID,
+                        EMP_ID_PAR,
+                           OPERATION_TYPE_FLAG,
+						    PAY_DATE_PAR ,GROSS_SALARY_VAL,DIVISION_PAR,SOCIAL_FREE_PAR,tax_free_par);
+					TOT_DED_OUT:=DEDFIX_VAL;
+					commit;
+   /***********************/
+    sub_net_VAL:=
+	     get_sub_net (PAYROLL_ID   ,
+                                                                    EMP_ID_PAR ,
+                                                                    OPERATION_TYPE_FLAG,
+																	 PAY_DATE_PAR,
+																	  DIVISION_PAR ,
+																	  'D' ,
+																	   SOCIAL_FREE_PAR,
+																	TAX_FREE_PAR  );
+					sub_net:=sub_net_VAL;
+					commit;
+   /***************************/
+ LOAN_VAL:= GET_LOAN (EMP_ID_PAR,
+                                          PAYROLL_ID ,
+                                     OPERATION_TYPE_FLAG   ,
+                                       PAY_DATE_PAR        );
+	TOT_LOAN_OUT:=LOAN_VAL;
+commit;
+	/*****************************t TOTAL DEDUCTIONS **************************************************************/
+	IF OPERATION_TYPE_FLAG = 1      THEN
+         INSERT INTO PAY_PAYROLLS_LINES (ID,
+                                         PAY_ID,
+                                         PAY_PAYROLL_TYPES_ID,
+                                         AMT,EMP_ID
+                                         )
+           VALUES   (PAY_PAYROLLS_LINES_SEQ.NEXTVAL,
+                     PAYROLL_ID,
+                    14,
+                  (DEDFIX_VAL+LOAN_VAL),EMP_ID_PAR
+                     );
+	 /*****************************t NET  SALARY     **************************************************************/
+				 INSERT INTO PAY_PAYROLLS_LINES (ID,
+                                         PAY_ID,
+                                         PAY_PAYROLL_TYPES_ID,
+                                         AMT,EMP_ID
+                                         )
+           VALUES   (PAY_PAYROLLS_LINES_SEQ.NEXTVAL,
+                     PAYROLL_ID,
+                    15,
+              (GROSS_SALARY_VAL-    (DEDFIX_VAL+LOAN_VAL)),EMP_ID_PAR
+                     );
+UPDATE PAY_PAYROLLS SET NET_SALARY=nvl(GROSS_SALARY_VAL,0)-    (nvl(DEDFIX_VAL,0)+nvl(LOAN_VAL,0)) WHERE ID = PAYROLL_ID;
+    END IF;
+net_salary_out :=nvl(GROSS_SALARY_VAL,0)-    (nvl(DEDFIX_VAL,0)+nvl(LOAN_VAL,0));
+   /***********************************/
+   RETURN(  net_SALARY_out );
+	  END GEN_TRAIL;
+
+	  /***********************************************************************************************************************************************************8/
+	  /******************************************************begining of sub gross sal*******************************************************************/
+FUNCTION GET_subGROSS_SAL ( PAYROLL_ID                               NUMBER,
+                                                                   EMP_ID_PAR                              NUMBER,
+                                                                   OPERATION_TYPE_FLAG    NUMBER,
+																   PAY_DATE_PAR                       DATE ,
+																   DIVISION_PAR                           NUMBER,
+																     SOCIAL_FREE_PAR        number,  tax_FREE_PAR   number    )
+      RETURN NUMBER
+   IS
+RESULT NUMBER:=0;
+p_item number;p_amt number:=0;NO_DAYS NUMBER:=0;MON_DAYS NUMBER;SUB_GROSS NUMBER:=0;temp_amt NUMBER:=0;g_sal number;
+sp_allow number;Field_Rate number;dep number;F_DAY NUMBER;
+begin
+BEGIN
+SELECT gross_salary ,MERIT_RATE,dept_departmrnt_no, DECODE(dept_departmrnt_no,9,15,14)
+ into g_sal ,field_rate ,dep  ,F_DAY FROM employees  WHERE EMPloyee_no=EMP_ID_PAR;
+
+EXCEPTION WHEN NO_DATA_FOUND THEN
+NO_DAYS:=0;
+END;
+
+   IF OPERATION_TYPE_FLAG = 1      THEN
+SUB_GROSS :=
+         GET_PAY_SETTING (
+                        PAYROLL_ID,
+                        EMP_ID_PAR,
+                           OPERATION_TYPE_FLAG,
+						    PAY_DATE_PAR ,
+							 DIVISION_PAR,'A',   SOCIAL_FREE_PAR ,tax_free_par   );
+commit;
+    RESULT:=SUB_GROSS;
+end if;
+
+IF OPERATION_TYPE_FLAG = 1      THEN
+         INSERT INTO PAY_PAYROLLS_LINES (ID,
+                                         PAY_ID,
+                                         PAY_PAYROLL_TYPES_ID,
+                                         AMT,EMP_ID
+                                         )
+           VALUES   (PAY_PAYROLLS_LINES_SEQ.NEXTVAL,
+                     PAYROLL_ID,
+                    6,
+                  RESULT,EMP_ID_PAR
+                     );
+    END IF;
+
+	 commit;
+
+
+      RETURN (RESULT);
+
+   END GET_subGROSS_SAL;
+
+/******************************************************end of sub gross sal****************************************************************/
+/*************************************************************************************************************************/
+FUNCTION GET_GROSS_SAL ( PAYROLL_ID                               NUMBER,
+                                                                   EMP_ID_PAR                              NUMBER,
+                                                                   OPERATION_TYPE_FLAG    NUMBER,
+																   PAY_DATE_PAR                       DATE ,
+																   DIVISION_PAR                           NUMBER,
+																     SOCIAL_FREE_PAR        number,  tax_FREE_PAR   number    )
+      RETURN NUMBER
+   IS
+RESULT NUMBER:=0;
+p_item number;p_amt number:=0;NO_DAYS NUMBER:=0;MON_DAYS NUMBER;SUB_GROSS NUMBER:=0;temp_amt NUMBER:=0;g_sal number;
+sp_allow number;Field_Rate number;dep number;F_DAY NUMBER;
+begin
+
+   DECLARE CURSOR ALLOW IS SELECT DISTINCT PAY_PAYROLL_ITEM_NO,
+   nvl(decode( PAY_PAYROLL_ITEM_NO,5,net_salary(g_sal,nvl(TAX_FREE_PAR,0)   ,nvl(SOCIAL_FREE_PAR,0)),AMOUNT),0)amount
+   FROM PAY_EMPLOYEE_ITEMS WHERE ALLOW_DED_FLAG='A' and employee_no=EMP_ID_PAR ;
+
+    CURSOR ALLOW2  IS SELECT DISTINCT PAY_PAYROLL_ITEM_NO,
+   amnt
+   FROM PAY_montHly_allow  WHERE  employee_no=EMP_ID_PAR and pay_date=TO_CHAR(PAY_DATE_PAR,'MM/YYYY')  ;
+      BEGIN
+/*BEGIN
+SELECT NO_DAYS  INTO NO_DAYS FROM PAY_SALARY_CHANGE  WHERE EMP_ID=EMP_ID_PAR
+AND TO_CHAR(TR_DATE,'MM/YYYY')=TO_CHAR(PAY_DATE_PAR,'MM/YYYY') AND REASON=1 ;
+EXCEPTION WHEN NO_DATA_FOUND THEN
+NO_DAYS:=0;
+END;*/
+NO_DAYS:=0;
+BEGIN
+SELECT gross_salary ,MERIT_RATE,dept_departmrnt_no, DECODE(dept_departmrnt_no,9,15,14)
+ into g_sal ,field_rate ,dep  ,F_DAY FROM employees  WHERE EMPloyee_no=EMP_ID_PAR;
+
+EXCEPTION WHEN NO_DATA_FOUND THEN
+NO_DAYS:=0;
+END;
+        FOR P IN ALLOW LOOP
+		IF P.PAY_PAYROLL_ITEM_NO=5  THEN
+
+		P_AMT:=ROUND((P.AMOUNT/30)*field_rate*F_DAY,2);
+		ELSE
+		P_AMT:=P.AMOUNT;
+		/*MON_DAYS:=TO_NUMBER(TO_CHAR(LAST_DAY(PAY_DATE_PAR),'DD'));
+		P_AMT:=ROUND((P.AMOUNT/30)*NO_DAYS,2);*/
+		END IF;
+   IF OPERATION_TYPE_FLAG = 1      THEN
+         INSERT INTO PAY_PAYROLLS_LINES (ID,
+                                         PAY_ID,
+                                         PAY_PAYROLL_TYPES_ID,
+                                         AMT,EMP_ID
+                                         )
+           VALUES   (PAY_PAYROLLS_LINES_SEQ.NEXTVAL,
+                     PAYROLL_ID,
+                     P. PAY_PAYROLL_ITEM_NO,
+                    P_AMT,EMP_ID_PAR
+                     );
+    END IF;
+	  RESULT := RESULT+ P_AMT;
+END LOOP;
+ FOR P2 IN ALLOW2 LOOP
+
+   IF OPERATION_TYPE_FLAG = 1      THEN
+         INSERT INTO PAY_PAYROLLS_LINES (ID,
+                                         PAY_ID,
+                                         PAY_PAYROLL_TYPES_ID,
+                                         AMT,EMP_ID
+                                         )
+           VALUES   (PAY_PAYROLLS_LINES_SEQ.NEXTVAL,
+                     PAYROLL_ID,
+                     P2. PAY_PAYROLL_ITEM_NO,
+                    P2.AMNT,EMP_ID_PAR
+                     );
+    END IF;
+	  RESULT := RESULT+ P2.AMNT;
+END LOOP;
+SUB_GROSS :=
+         GET_PAY_SETTING (
+                        PAYROLL_ID,
+                        EMP_ID_PAR,
+                           OPERATION_TYPE_FLAG,
+						    PAY_DATE_PAR ,
+							 DIVISION_PAR,'A',   SOCIAL_FREE_PAR ,tax_free_par   );
+TEMP_AMT:=
+         GET_TEMP_AMT (
+                        PAYROLL_ID,
+                        EMP_ID_PAR,
+                           OPERATION_TYPE_FLAG,
+						    PAY_DATE_PAR ,
+							 DIVISION_PAR);
+commit;
+    RESULT:=RESULT+SUB_GROSS+TEMP_AMT;
+
+IF OPERATION_TYPE_FLAG = 1      THEN
+         INSERT INTO PAY_PAYROLLS_LINES (ID,
+                                         PAY_ID,
+                                         PAY_PAYROLL_TYPES_ID,
+                                         AMT,EMP_ID
+                                         )
+           VALUES   (PAY_PAYROLLS_LINES_SEQ.NEXTVAL,
+                     PAYROLL_ID,
+                    7,
+                  RESULT,EMP_ID_PAR
+                     );
+    END IF;
+ END;
+ commit;
+      RETURN (RESULT);
+   END GET_GROSS_SAL;
+
+   /***********************************************************************************************************/
+
+   FUNCTION GET_DEDFIX (        PAYROLL_ID                              NUMBER,
+                                                                 EMP_ID_PAR                              NUMBER,
+                                                                OPERATION_TYPE_FLAG     NUMBER,
+																 PAY_DATE_PAR                       DATE,
+																 GROSS_SALARY_VAL            NUMBER,
+																 DIVISION_PAR                            NUMBER
+																 ,SOCIAL_FREE_PAR number,tax_free_par   number)
+      RETURN NUMBER
+
+   IS
+RESULT NUMBER:=0;RESULT1 NUMBER:=0;RESULT2 NUMBER:=0;g_s  number;
+p_item number;p_amt number;NO_DAYS NUMBER:=0;MON_DAYS NUMBER;SUB_DED  NUMBER:=0;TEMP_DED NUMBER;tax number;tax_amnt number;
+social number;ADV_SAL NUMBER; zakat number:=0; gross number;chck number; tax_last number;
+--seal number:=7542; nesab number:=1836; needs number:=5705;
+seal number:=31674; nesab number:=13441; needs number:=18233;
+temp number; age number;
+begin
+   DECLARE CURSOR ded IS SELECT DISTINCT PAY_PAYROLL_ITEM_NO,AMOUNT
+   FROM PAY_EMPLOYEE_ITEMS WHERE ALLOW_DED_FLAG='D' and employee_no=EMP_ID_PAR ;
+
+      BEGIN
+
+BEGIN
+
+SELECT NO_DAYS  INTO NO_DAYS FROM PAY_SALARY_CHANGE  WHERE EMP_ID=EMP_ID_PAR
+AND TO_CHAR(TR_DATE,'MM/YYYY')=TO_CHAR(PAY_DATE_PAR,'MM/YYYY') AND REASON=2 ;
+EXCEPTION WHEN NO_DATA_FOUND THEN
+NO_DAYS:=0;
+END;
+
+        FOR P IN DED LOOP
+
+   IF OPERATION_TYPE_FLAG = 1      THEN
+         INSERT INTO PAY_PAYROLLS_LINES (ID,
+                                         PAY_ID,
+                                         PAY_PAYROLL_TYPES_ID,
+                                         AMT,EMP_ID
+                                         )
+           VALUES   (PAY_PAYROLLS_LINES_SEQ.NEXTVAL,
+                     PAYROLL_ID,
+                     P. PAY_PAYROLL_ITEM_NO,
+                    P.AMOUNT,EMP_ID_PAR
+                     );
+    END IF;
+	  RESULT1 := RESULT1+ nvl(P.AMOUNT,0);
+END LOOP;
+IF  NO_DAYS=0 THEN
+		P_AMT:=0;
+		ELSE
+		MON_DAYS:=TO_NUMBER(TO_CHAR(LAST_DAY(PAY_DATE_PAR),'DD'));
+		--P_AMT:=ROUND((GROSS_SALARY_VAL/MON_DAYS)*(MON_DAYS-NO_DAYS),2);
+		P_AMT:=ROUND((GROSS_SALARY_VAL/30)*(NO_DAYS),2);
+		END IF;
+IF OPERATION_TYPE_FLAG = 1     and p_amt!=0  THEN
+         INSERT INTO PAY_PAYROLLS_LINES (ID,
+                                         PAY_ID,
+                                         PAY_PAYROLL_TYPES_ID,
+                                         AMT,EMP_ID
+                                         )
+           VALUES   (PAY_PAYROLLS_LINES_SEQ.NEXTVAL,
+                     PAYROLL_ID,
+                    13,
+                  P_AMT,EMP_ID_PAR
+                     );
+    END IF;
+
+	RESULT2 := RESULT2+nvl(p_amt,0);
+ END;
+ SUB_DED:=
+         GET_PAY_SETTING (
+                        PAYROLL_ID,
+                        EMP_ID_PAR,
+                           OPERATION_TYPE_FLAG,
+						    PAY_DATE_PAR ,
+							 DIVISION_PAR,'D',   SOCIAL_FREE_PAR ,tax_free_par   );
+	TEMP_DED:=
+         GET_TEMP_DED (
+                        PAYROLL_ID,
+                        EMP_ID_PAR,
+                           OPERATION_TYPE_FLAG,
+						    PAY_DATE_PAR ,
+							 DIVISION_PAR);
+
+	ADV_SAL:=
+         GET_ADV_SAL (
+                        PAYROLL_ID,
+                        EMP_ID_PAR,
+                           OPERATION_TYPE_FLAG,
+						    PAY_DATE_PAR ,
+							 DIVISION_PAR);
+
+select nvl(sum(amt),0) into tax_amnt  from pay_payrolls_lines where pay_id= PAYROLL_ID    and
+	 PAY_PAYROLL_TYPES_ID in (select  id from PAY_PAYROLL_ITEMS_TYPES where  TAXABLE     =1) and nvl(tax_free_par,0)=0;
+	select nvl(sum(amt) ,0) into social  from pay_payrolls_lines where pay_id=  PAYROLL_ID     and
+	 PAY_PAYROLL_TYPES_ID =20 and nvl(tax_free_par,0)=0;
+	 if nvl(SOCIAL_FREE_PAR,0)=1 then
+	 update pay_payrolls_lines  set amt=0 where pay_id=  PAYROLL_ID     and
+	 PAY_PAYROLL_TYPES_ID =20;
+	 end if;
+                 ------------------------------------------------------Zakat----------------------------------------------------------------------------
+				select gross_salary into gross from employees  WHERE EMPloyee_no=EMP_ID_PAR ;
+
+                -- if GROSS_SALARY_VAL >=seal and (GROSS_SALARY_VAL-needs)>nesab
+				if GROSS >=seal and (GROSS-needs)>nesab
+                 then
+                 temp:=gross-needs;
+                 zakat:=nvl(temp*2.5/100,0);
+                 end if;
+
+
+
+                 ---------------------------------------------------------------------------------------------------------------------------------------
+				 if  nvl(tax_free_par,0)=0 then
+                                begin
+                                select TRUNC(MONTHS_BETWEEN(SYSDATE,NVL(BIRTH_DATE,SYSDATE)) / 12)
+                                into age
+                                from EMPLOYEES  WHERE EMPLOYEE_NO=EMP_ID_PAR;
+                              if age<50 then
+	 	tax:=tax_cal(tax_amnt,social);
+                tax_last:=nvl(tax-zakat,0);
+               else
+             --  t---ax:=tax_cal((tax_amnt-600),social); ---- if age >=50 then 600 SDG is out of taxes-----
+			Tax:=tax_cal1((tax_amnt),social);
+            tax_last:=nvl(tax-zakat,0);
+                end if;
+                end;
+				 else
+				 tax_last:=0;
+				 end if;
+                 ---------------------------------------------------------------------------------------------------------------------------------------
+
+	 IF OPERATION_TYPE_FLAG = 1      THEN
+         INSERT INTO PAY_PAYROLLS_LINES (ID,
+                                         PAY_ID,
+                                         PAY_PAYROLL_TYPES_ID,
+                                         AMT,EMP_ID
+                                         )
+           VALUES   (PAY_PAYROLLS_LINES_SEQ.NEXTVAL,
+                     PAYROLL_ID,
+                    21,
+                 tax_last,EMP_ID_PAR
+                     );
+                     ------------------Inset Zakat--------------------------
+                    INSERT INTO PAY_PAYROLLS_LINES (ID,
+                                         PAY_ID,
+                                         PAY_PAYROLL_TYPES_ID,
+                                         AMT,EMP_ID
+                                         )
+           VALUES   (PAY_PAYROLLS_LINES_SEQ.NEXTVAL,
+                     PAYROLL_ID,
+                    37,
+                 zakat,EMP_ID_PAR
+                     );
+
+    END IF;
+RESULT:=nvl(RESULT1,0)+nvl(RESULT2,0)+nvl(SUB_DED,0)+nvl(TEMP_DED,0)+nvl(tax,0)+nvl(ADV_SAL,0);
+commit;
+      RETURN (RESULT);
+   END GET_DEDFIX;
+/*****************************************************************************************************************************/
+
+FUNCTION GET_PAY_SETTING ( PAYROLL_ID                               NUMBER,
+                                                                   EMP_ID_PAR                              NUMBER,
+                                                                   OPERATION_TYPE_FLAG    NUMBER,
+																   PAY_DATE_PAR                       DATE ,
+																   DIVISION_PAR                           NUMBER,
+																   A_D_FLG                                      CHAR,
+																   SOCIAL_FREE_PAR number,tax_free_par   number)
+      RETURN NUMBER
+
+   IS
+RESULT NUMBER:=0;
+p_item number;p_amt number;NO_DAYS NUMBER:=0;MON_DAYS NUMBER;AMOUNT NUMBER;X NUMBER;TY CHAR;CC NUMBER;
+BEGIN
+DECLARE
+   CURSOR ALLOW IS SELECT DISTINCT  PAY_PAYROLL_TYPES_ID,AMT,CAL_TYPE,ID
+   FROM PAY_PAYROLL_ITEMS_SETTING  WHERE PAY_PAYROLL_TYPES_ID IN(SELECT ID FROM PAY_PAYROLL_ITEMS_TYPES WHERE
+ ALLOWANCE_DEDUCTION_FLAG       =A_D_FLG )
+ AND  SETTING_DATE<=(SELECT DATE_OF_JOIN FROM EMPLOYEES WHERE EMPLOYEE_NO=EMP_ID_PAR  )
+ AND SETTING_DATE2>=(SELECT DATE_OF_JOIN FROM EMPLOYEES WHERE EMPLOYEE_NO=EMP_ID_PAR  );---and COMP_no=DIVISION_PAR  ;
+
+      BEGIN
+
+BEGIN
+SELECT NO_DAYS  INTO NO_DAYS FROM PAY_SALARY_CHANGE  WHERE EMP_ID=EMP_ID_PAR
+AND TO_CHAR(TR_DATE,'MM/YYYY')=TO_CHAR(PAY_DATE_PAR,'MM/YYYY') AND REASON in(1,3) ;
+EXCEPTION WHEN NO_DATA_FOUND THEN
+NO_DAYS:=0;
+END;
+
+        FOR P IN ALLOW LOOP
+		SELECT  FIX_VAR_FLAG INTO TY  FROM PAY_PAYROLL_ITEMS_TYPES WHERE ID =P.PAY_PAYROLL_TYPES_ID;
+		/******************************************************************************/
+		IF  P.CAL_TYPE =2 THEN
+		SELECT SUM(gross_salary) INTO X  FROM employees  WHERE EMPLOYEE_NO=EMP_ID_PAR;
+		AMOUNT:= ROUND(X*P.AMT/100,2);
+		ELSE
+		AMOUNT:=P.AMT;
+		END IF ;
+		/******************************************************************************/
+		IF  NO_DAYS=0 THEN
+		P_AMT:=AMOUNT;
+		ELSE
+		MON_DAYS:=TO_NUMBER(TO_CHAR(LAST_DAY(PAY_DATE_PAR),'DD'));
+		P_AMT:=ROUND((AMOUNT/30)*NO_DAYS,2);
+		END IF;
+		/******************************************************************************/
+		if   P.  PAY_PAYROLL_TYPES_ID in(20,8)  and nvl( SOCIAL_FREE_PAR,0)=1 then
+		 p_amt:=0 ;
+
+	 end if;
+	 /******************************************************************************/
+	 SELECT COUNT(*) INTO CC FROM  PAY_PAYROLLS_LINES WHERE PAY_PAYROLL_TYPES_ID =P.PAY_PAYROLL_TYPES_ID
+ AND  EMP_ID=EMP_ID_PAR
+ AND PAY_ID IN (SELECT ID FROM PAY_PAYROLLS WHERE PAY_PAYROLLS.EMP_ID=PAY_PAYROLLS_LINES.EMP_ID AND
+ TO_CHAR(PAY_DATE,'MM/YYYY')=TO_CHAR(PAY_DATE_PAR,'MM/YYYY')) ;
+ IF CC=0 THEN
+   IF OPERATION_TYPE_FLAG = 1      THEN
+         INSERT INTO PAY_PAYROLLS_LINES (ID,
+                                         PAY_ID,
+                                         PAY_PAYROLL_TYPES_ID,
+                                         AMT,EMP_ID
+                                         )
+           VALUES   (PAY_PAYROLLS_LINES_SEQ.NEXTVAL,
+                     PAYROLL_ID,
+                     P.PAY_PAYROLL_TYPES_ID,
+                    P_AMT,EMP_ID_PAR
+                     );
+    END IF;
+	END IF;
+	/******************************************************************************/
+	IF NVL(TY,'F')='V'  or ( P.  PAY_PAYROLL_TYPES_ID in(20,8)  and nvl( SOCIAL_FREE_PAR,0)=1 )THEN
+	RESULT:=RESULT;
+	ELSE
+
+	  RESULT := RESULT+ P_AMT;
+	  END IF;
+	  /******************************************************************************/
+END LOOP;
+ END;
+ commit;
+      RETURN (RESULT);
+   END GET_PAY_SETTING;
+
+   /**********************************************************************************************************************************/
+   FUNCTION GET_LOAN (EMP_ID_PAR               NUMBER,
+                                           PAYROLL_ID               NUMBER,
+                                        OPERATION_TYPE_FLAG      NUMBER,
+                                       PAY_DATE_PAR           DATE
+                      )
+      RETURN NUMBER
+   IS
+      RESULT          NUMBER := 0;
+      PAIED_AMT       NUMBER := 0;
+     INSTALL_AMT     NUMBER := 0;
+
+      CURSOR LOAN (EMP NUMBER)
+      IS
+         SELECT   P.ID,
+                  P.GRAND_TOTAL,
+                  P.EMPLOYEE_LOAN_SERIAL,
+                  P.MONTHLY_DEDUCTION,
+                  P.LOAN_STATUS,
+                  P.ADJUESTMENT_AMT,
+				  P.PAY_LOAN_TYPES_ID
+                FROM   PAY_LOAN_MASTR  P
+          WHERE   LOAN_STATUS = 0 AND EMPLOYEE_NO = EMP;
+    BEGIN
+      FOR REC IN LOAN (EMP_ID_PAR)
+      LOOP
+         BEGIN
+            SELECT   NVL (SUM (AMOUNT), 0)
+              INTO   PAIED_AMT
+              FROM   PAY_LOAN_DTL
+             WHERE   PAY_LOAN_MASTR_ID = REC.ID;
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               PAIED_AMT := 0;
+              END;
+
+         IF REC.GRAND_TOTAL =
+               REC.MONTHLY_DEDUCTION + REC.ADJUESTMENT_AMT + PAIED_AMT
+         THEN
+            -- THIS IS LAST MONTH MAKE ADJUESTMENT
+            INSTALL_AMT := REC.MONTHLY_DEDUCTION + REC.ADJUESTMENT_AMT;
+
+            elsif  REC.GRAND_TOTAL =PAIED_AMT then
+                INSTALL_AMT :=0 ;
+				else
+            -- IT'S NOT LAST MONTH
+            INSTALL_AMT := REC.MONTHLY_DEDUCTION;
+
+         END IF;
+         IF OPERATION_TYPE_FLAG = 1
+            THEN
+               INSERT INTO PAY_LOAN_DTL (ID,
+                                         AMOUNT,
+                                         PAY_ID,
+                                         PAY_LOAN_MASTR_ID,
+                                         TRANS_DATE,
+                                         EMP_LOAN_SERIAL)
+                 VALUES   (PAY_LOAN_DTL_SEQ.NEXTVAL,
+                           INSTALL_AMT,
+                           PAYROLL_ID,
+                           REC.ID,
+                           PAY_DATE_PAR,
+                           REC.EMPLOYEE_LOAN_SERIAL);
+
+     INSERT INTO PAY_PAYROLLS_LINES (ID,
+                                         PAY_ID,
+                                         PAY_PAYROLL_TYPES_ID,
+                                         AMT,
+                                         emp_id)
+           VALUES   (PAY_PAYROLLS_LINES_SEQ.NEXTVAL,
+                     PAYROLL_ID,
+                     REC.PAY_LOAN_TYPES_ID      ,
+                     INSTALL_AMT,
+                     EMP_ID_PAR );
+            END IF;
+
+
+            RESULT := RESULT + INSTALL_AMT;
+
+      END LOOP;
+commit;
+      RETURN (RESULT);
+   END GET_LOAN;
+   /*****************************************************************************************************************************************/
+   FUNCTION GEN_ACTUAL (PAY_DATE_PAR DATE)
+      RETURN NUMBER
+   IS
+      RESULT   NUMBER := 0;
+
+      CURSOR LOAN_CLOSE
+      IS
+           SELECT   P.ID,
+                    P.GRAND_TOTAL,
+                     P.ADJUESTMENT_AMT,
+                    SUM (PL.AMOUNT) AMT
+                   FROM   PAY_LOAN_MASTR P, PAY_LOAN_DTL PL
+            WHERE   PL.PAY_LOAN_MASTR_ID = P.ID AND P.LOAN_STATUS = 0 and p.EMPLOYEE_NO not in
+			 (select employee_no from employees where hire_type=6 )
+         GROUP BY   P.ID,
+                    P.GRAND_TOTAL,
+                     P.ADJUESTMENT_AMT ;
+   BEGIN
+      FOR REC IN LOAN_CLOSE
+      LOOP
+         IF REC.GRAND_TOTAL <= REC.AMT
+         THEN
+            UPDATE   PAY_LOAN_MASTR
+               SET   LOAN_STATUS = 1,modified_user=500,modified_date=sysdate,remark='Auto Close'
+             WHERE   ID = REC.ID;
+         END IF;
+      END LOOP;
+
+      UPDATE   PAY_PAYROLLS
+         SET   PAYROLL_STATUS = 1, MODIFIED_DATE = SYSDATE
+       WHERE   TO_CHAR (PAY_DATE, 'MM/YYYY') =
+               TO_CHAR (PAY_DATE_PAR, 'MM/YYYY') ;
+
+      RESULT := 1;
+      RETURN (RESULT);
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         RESULT := 0;
+         RETURN (RESULT);
+   END GEN_ACTUAL;
+   /*******************************************************************************************************************************/
+
+   FUNCTION GET_temp_amt ( PAYROLL_ID                               NUMBER,
+                                                                   EMP_ID_PAR                              NUMBER,
+                                                                   OPERATION_TYPE_FLAG    NUMBER,
+																   PAY_DATE_PAR                       DATE ,
+																   DIVISION_PAR                           NUMBER)
+      RETURN NUMBER
+   IS
+RESULT NUMBER:=0;
+p_item number;p_amt number;NO_DAYS NUMBER:=0;MON_DAYS NUMBER;SUB_GROSS NUMBER:=0;
+begin
+
+   DECLARE CURSOR ALLOW IS SELECT DISTINCT PAY_PAYROLL_ITEMS_TYPES_ID,AMT
+   FROM PAY_EMP_TMP_ALLOWANCE WHERE to_char(tr_date,'MM/YYYY')=TO_CHAR(PAY_DATE_PAR,'MM/YYYY') and emp_ID=EMP_ID_PAR ;
+
+      BEGIN
+
+        FOR P IN ALLOW LOOP
+
+   IF OPERATION_TYPE_FLAG = 1      THEN
+         INSERT INTO PAY_PAYROLLS_LINES (ID,
+                                         PAY_ID,
+                                         PAY_PAYROLL_TYPES_ID,
+                                         AMT,EMP_ID
+                                         )
+           VALUES   (PAY_PAYROLLS_LINES_SEQ.NEXTVAL,
+                     PAYROLL_ID,
+                     P. PAY_PAYROLL_ITEMs_types_id,
+                    P.AMT,EMP_ID_PAR
+                     );
+    END IF;
+	  RESULT := RESULT+ P.AMT;
+END LOOP;
+
+ END;
+ commit;
+      RETURN (RESULT);
+   END GET_temp_amt;
+/*************************************************************************************************/
+
+FUNCTION GET_temp_DED ( PAYROLL_ID                               NUMBER,
+                                                                   EMP_ID_PAR                              NUMBER,
+                                                                   OPERATION_TYPE_FLAG    NUMBER,
+																   PAY_DATE_PAR                       DATE ,
+																   DIVISION_PAR                           NUMBER)
+      RETURN NUMBER
+   IS
+RESULT NUMBER:=0;
+p_item number;p_amt number;NO_DAYS NUMBER:=0;MON_DAYS NUMBER;SUB_GROSS NUMBER:=0;
+begin
+
+   DECLARE CURSOR DED IS SELECT DISTINCT PAY_PAYROLL_ITEMS_TYPES_ID,AMT
+   FROM PAY_EMP_TMP_DEDUCTION WHERE to_char(tr_date,'MM/YYYY')=TO_CHAR(PAY_DATE_PAR,'MM/YYYY') and emp_ID=EMP_ID_PAR ;
+
+      BEGIN
+
+        FOR P IN DED LOOP
+
+   IF OPERATION_TYPE_FLAG = 1      THEN
+         INSERT INTO PAY_PAYROLLS_LINES (ID,
+                                         PAY_ID,
+                                         PAY_PAYROLL_TYPES_ID,
+                                         AMT,EMP_ID
+                                         )
+           VALUES   (PAY_PAYROLLS_LINES_SEQ.NEXTVAL,
+                     PAYROLL_ID,
+                     P. PAY_PAYROLL_ITEMs_types_id,
+                    P.AMT,EMP_ID_PAR
+                     );
+    END IF;
+	  RESULT := RESULT+ P.AMT;
+END LOOP;
+
+ END;
+ commit;
+      RETURN (RESULT);
+   END GET_temp_DED;
+
+FUNCTION GET_ADV_SAL ( PAYROLL_ID                               NUMBER,
+                                                                   EMP_ID_PAR                              NUMBER,
+                                                                   OPERATION_TYPE_FLAG    NUMBER,
+																   PAY_DATE_PAR                       DATE ,
+																   DIVISION_PAR                           NUMBER)
+      RETURN NUMBER
+   IS
+RESULT NUMBER:=0;
+p_item number;p_amt number;NO_DAYS NUMBER:=0;MON_DAYS NUMBER;SUB_GROSS NUMBER:=0;
+begin
+
+   SELECT DISTINCT  nvl(max(AMT),0)  INTO P_AMT FROM ADVANCE_SALARY
+WHERE to_char(PAY_date,'MM/YYYY')=TO_CHAR(PAY_DATE_PAR,'MM/YYYY') and empLOYEE_NO=EMP_ID_PAR AND PAY_PAYROLL_ITEM_NO=15 ;
+
+      BEGIN
+
+
+   IF OPERATION_TYPE_FLAG = 1    and  p_amt>0  THEN
+         INSERT INTO PAY_PAYROLLS_LINES (ID,
+                                         PAY_ID,
+                                         PAY_PAYROLL_TYPES_ID,
+                                         AMT,EMP_ID
+                                         )
+           VALUES   (PAY_PAYROLLS_LINES_SEQ.NEXTVAL,
+                     PAYROLL_ID,
+                     31,
+                    P_AMT,EMP_ID_PAR
+                     );
+    END IF;
+
+	  RESULT :=  P_AMT;
+
+ END;
+ commit;
+      RETURN (RESULT);
+   END GET_ADV_SAL;
+
+   function get_sub_net (PAYROLL_ID             NUMBER,
+                                                                    EMP_ID_PAR            NUMBER,
+                                                                    OPERATION_TYPE_FLAG    NUMBER,
+																	 PAY_DATE_PAR    DATE,
+																	  DIVISION_PAR   NUMBER,
+																	  A_D_FLG             CHAR,
+																	   SOCIAL_FREE_PAR            number,
+																	TAX_FREE_PAR            NUMBER)
+																	 RETURN NUMBER
+   IS
+RESULT NUMBER:=0;
+tax_val  number;zakat_val  number;ded_val   number;sub_gross  number;
+begin
+select  amt into tax_val from PAY_PAYROLLS_LINES where emp_id= EMP_ID_PAR   and PAY_ID in (select id from pay_payrolls where pay_payrolls.emp_id=PAY_PAYROLLS_LINES.emp_id
+and to_char(PAY_date,'MM/YYYY')=TO_CHAR(PAY_DATE_PAR,'MM/YYYY') )
+and  PAY_PAYROLL_TYPES_ID=21;
+
+select  amt into zakat_val from PAY_PAYROLLS_LINES where emp_id= EMP_ID_PAR   and PAY_ID in (select id from pay_payrolls where pay_payrolls.emp_id=PAY_PAYROLLS_LINES.emp_id
+and to_char(PAY_date,'MM/YYYY')=TO_CHAR(PAY_DATE_PAR,'MM/YYYY') )
+and  PAY_PAYROLL_TYPES_ID=37;
+select  amt into sub_gross from PAY_PAYROLLS_LINES where emp_id= EMP_ID_PAR   and PAY_ID in (select id from pay_payrolls where pay_payrolls.emp_id=PAY_PAYROLLS_LINES.emp_id
+and to_char(PAY_date,'MM/YYYY')=TO_CHAR(PAY_DATE_PAR,'MM/YYYY') )
+and  PAY_PAYROLL_TYPES_ID=6;
+ commit;
+ ded_val:=  GET_PAY_SETTING (
+                        PAYROLL_ID,
+                        EMP_ID_PAR,
+                           OPERATION_TYPE_FLAG,
+						    PAY_DATE_PAR ,
+							 DIVISION_PAR,'D',   SOCIAL_FREE_PAR ,tax_free_par   );
+			RESULT:=sub_gross-(ded_val+tax_val+zakat_val) ;
+			 INSERT INTO PAY_PAYROLLS_LINES (ID,
+                                         PAY_ID,
+                                         PAY_PAYROLL_TYPES_ID,
+                                         AMT,EMP_ID
+                                         )
+           VALUES   (PAY_PAYROLLS_LINES_SEQ.NEXTVAL,
+                     PAYROLL_ID,
+                    43,
+                  RESULT,EMP_ID_PAR
+                     );
+      RETURN (RESULT);
+   END get_sub_net ;
+
+END PAYROLL_PKG;
