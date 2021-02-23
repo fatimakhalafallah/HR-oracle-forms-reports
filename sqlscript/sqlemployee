@@ -195,6 +195,51 @@ ALTER TABLE EMPLOYEE_TRAINING ADD  CONSTRAINT EMP_TRAINING_FK
 ALTER TABLE EMPLOYEE_MASTER_SNAPSHOT ADD  CONSTRAINT EMPLOYEE_MASTER_SNAPSHOT_R01
  FOREIGN KEY (EMP_ID) 
   REFERENCES PETRO.EMPLOYEES (EMPLOYEE_NO) ;
+  
+  
+CREATE TABLE FORM_LEAVES_APPLICATION ( 
+  LEAVE_FORM__NO          NUMBER        NOT NULL, 
+  FORM_DATE               DATE          NOT NULL, 
+  EMPLOYEE_NO             NUMBER (8)    NOT NULL, 
+  GRADE_NO                NUMBER (3), 
+  LS_LEAVE_TYPE           NUMBER (2), 
+  LEAVE_YEAR              DATE, 
+  NUMBER_OF_DAYS          NUMBER (3), 
+  START_DATE              DATE, 
+  END_DATE                DATE, 
+  LT_COMMENT              VARCHAR2 (500), 
+  LS_SETTING_NO           NUMBER, 
+  CONTACT_WHILE_ON_LEAVE  VARCHAR2 (100), 
+  FORM_STATUS             NUMBER (2), 
+  FORM_STATUS_REASON      VARCHAR2 (1000), 
+  STATUS_DATE             DATE, 
+  OLD_DAYS                NUMBER (6), 
+  UPDATE_USER             NUMBER (8), 
+  HR_ENDORSE              NUMBER (8), 
+  DOCTOR_APPROVAL         NUMBER (8), 
+  APPROVED_BY             NUMBER (8), 
+  APPROVED_BY_CAT         NUMBER (2), 
+  SENDTOHR                NUMBER (1), 
+  ACTINING_MNGR_ID        NUMBER (9), 
+  ENDORSE_FLAG            NUMBER (1)    DEFAULT 0, 
+  ENDORSE_BY              NUMBER (8), 
+  HR_ENDORSE_DATE         DATE, 
+  ENDORSE_DATE            DATE, 
+  APPROVE_DATE            DATE, 
+  UPDATE_DATE             DATE, 
+  LEAVE_ALLOWANCE         VARCHAR2 (1), 
+  ALLOWANCE_AMOUNT        VARCHAR2 (1), 
+  ALERT_DATE              DATE, 
+  PAYROLL_RESTART_DATE    DATE, 
+  GM_FLAG                 NUMBER, 
+  ENTITLEMENT_FLAG        NUMBER (2), 
+  SERVICE_YEARS           NUMBER ) ; 
+
+COMMENT ON COLUMN FORM_LEAVES_APPLICATION.ENDORSE_FLAG IS '''1 HR ENDORSE,2 HR UNENDORE,3 SUPERVIOR ENDORSE,4 SUPERVISOR UNENDORSE''';
+COMMENT ON COLUMN FORM_LEAVES_APPLICATION.FORM_STATUS IS '''0 PENDING , 1 SENT TO HR, 2 HR ENDORSE,HR UNENDORSE,4 SUPERVISOR ENDORSE,5 SUPERVISOR UNENDORSE,6 MANAGER APPROVE,7 MANAGER DISAPPROVE''    
+10 endorsements ,   
+'''''''''';;;;;'''''''''';;;;;'''''''''';;;;'''''''''''';;;;;'''''''''';;;;;'''''''''';;;;;'''''''''';;;'''''''''';;;;'''''''''''''';;;;;'''''''';;;;;'''''''';;;;;'''''''';;;;;'''''''''';;;;;'''''''''';;;;;;'''''''''''';;;;;;;'''''''''';;;;;;'''''''''''';'''''''';'''''''''''''''''''';;;;;;'''''''''''''''';;;;;'''''''''''''''';;;;'''''''''''''''';;;;;;;;;'''''''''''''''''';;;;;;;;'''''''''''''''';;;;;'''''''''''';;;;;'''''''''''';;;''''';
+
 
   
   
