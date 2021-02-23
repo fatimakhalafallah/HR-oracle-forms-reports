@@ -233,3 +233,81 @@ leave:=0;
    else return 0;
    end if;
 END;
+
+
+
+function annual_count (emp number,ty number,r char)return number   IS
+x             number;
+xx            number;
+xxx           number;
+countprev     number;
+carry         number;
+year_entitled number;
+j_d date;
+cat number;
+YEARPREV number;
+taken number;
+prevyear  number;
+loc varchar2(3);
+dep number;SN NUMBER;
+STATUS_DATE   DATE ;
+
+BEGIN
+begin
+ select leave_cat,date_of_join,employment_place ,dept_departmrnt_no into cat,j_d ,loc,dep from employees where employee_no=emp  ;
+ exception when no_data_found then null;
+ end;
+ select  count(*) into  sn  from employee_master_snapshot  where emp_id=emp and NEW_MERIT_RATE=0 ;
+if sn>0 then
+select  max(actual_date)  into  status_date  from employee_master_snapshot  where emp_id=emp and NEW_MERIT_RATE=0 ;
+end if;
+   select to_number(to_char(sysdate,'yyyy'))-1 into prevyear  from dual;
+
+   --message(' we are here');
+  -- message('     ');
+   --setting this year
+     if loc='K'  or (loc ='F' and  (dep=2 OR DEP=24))  then
+   BEGIN
+
+    select nvl(NUMBER_OF_DAYS_PER_YEAR,0) into x from LKP_LEAVING_SETTINGS where
+    LEAVE_TYPE=nvl(ty,1)and to_char(SETTING_YEAR,'yyyy')=to_char(sysdate,'yyyy')and
+    CONTRACT_STATUS=cat
+    and round(((sysdate-j_d)/365),2) between service_year and service_year2 and location=loc;
+
+   EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+    NULL;
+
+    END ;
+	else x:=0 ;
+	end if;
+   ---setting Previous  Year
+   BEGIN
+    select  NVL(leave_days,0)  into  YEARPREV  from leave_previous1 where
+    employee_no=emp and
+    year1=to_number(to_char(sysdate,'yyyy')-1)and leave_type=nvl(ty,1);
+
+   EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+    countprev:=0;
+    END;
+
+
+    ---taken this year
+    BEGIN
+   select sum(NVL(NUMBER_OF_DAYS,0)) into taken  from FORM_LEAVES_APPLICATION where
+   to_char(start_date,'yyyy')=to_char(sysdate,'yyyy') and employee_no=emp and form_status in(6,4,2,1,0)
+    and ls_leave_type=nvl(ty,1);
+   EXCEPTION
+     WHEN NO_DATA_FOUND THEN
+     null;
+   END;
+   if r='C' then
+   return nvl(x,0);
+   elsif r='T' then return  nvl(taken,0);
+   elsif r='P' then
+   return nvl(YEARPREV,0) ;
+   else return 0;
+   end if;
+END;
+
