@@ -1,0 +1,235 @@
+function annual_YEAR(emp number,TY NUMBER,r char,YYYY NUMBER)return NUMBER   IS
+x             number;LE NUMBER;
+xx            number;
+xxx           number;
+countprev     number;o_d  number; n_d   number;change_date   date;pre_days  number;xx1  number;
+carry         number;
+year_entitled number;
+j_d date;t   number;
+cat number;
+YEARPREV number;
+taken number;
+prevyear  number;
+e_m date;
+dep number; loc varchar2(3);
+sold number;
+leave number;
+bal number;
+STAT  NUMBER;
+sn number ;
+status_date   date;
+n_place   varchar2(2);
+o_place   varchar2(2);
+loc1   varchar2(3);
+OLD_LOC  VARCHAR2(1);
+NEW_LOC  VARCHAR2(1);
+STATUS_DATE1  DATE;
+TRANSFER_DATE  DATE ;
+BEGIN
+begin
+ select  leave_cat,date_of_join,employment_place,dept_departmrnt_no ,EMPLOYEE_STATUS,TRANSFER_DATE  into cat,j_d ,loc1,dep,STAT,TRANSFER_DATE   from employees where employee_no=emp
+ and hire_type!=4  ;
+
+ exception when no_data_found then null;
+ end;
+
+   prevyear  :=YYYY-1;
+
+   BEGIN
+ select  count(*) into  sn  from  employee_master_snapshot  where emp_id=emp and NEW_employment_place!=OLD_employment_place and to_char(tr_date,'yyyy')=yyyy ;--NEW_employment_place='K'  AND OLD_employment_place='F' ;--and dep not in (2,24)) ;
+if sn>0 then
+DECLARE
+l_xx   number;l_x   number;
+--select  max(actual_date) into  status_date1  from employee_master_snapshot  where emp_id=emp and NEW_employment_place!= OLD_employment_place and to_char(tr_date,'yyyy')=YYYY;
+CURSOR  SNAP IS
+select  max(actual_date) status_date1, NEW_employment_place, OLD_employment_place   from employee_master_snapshot  where emp_id=emp and
+ NEW_employment_place!= OLD_employment_place and to_char(tr_date,'yyyy')=YYYY
+GROUP BY   NEW_employment_place, OLD_employment_place ;
+BEGIN
+for i in snap
+LOOP
+STATUS_DATE1:=i.status_date1; NEW_LOC:=i.NEW_employment_place ;OLD_LOC:=i.OLD_employment_place ;
+if    new_loc='F' --AND DEP IN (2,24)
+THEN
+loc:='K' ; STATUS_DATE:=STATUS_DATE1 ;--j_d ;
+elsif   old_loc='F' AND new_loc='K'  THEN--AND DEP not IN (2,24) THEN
+loc:='K' ; STATUS_DATE:=STATUS_DATE1;
+end if ;
+/***************************loop*******************/
+  if   (tO_NUMBER(TO_CHAR(j_d,'YYYY'))=yyyy  )
+   then
+    select nvl(NUMBER_OF_DAYS_PER_YEAR,0) into l_xx from LKP_LEAVING_SETTINGS where
+    LEAVE_TYPE=nvl(ty,1)and to_char(SETTING_YEAR,'yyyy')=TO_CHAR(YYYY) and
+    CONTRACT_STATUS=cat
+	and 1 >= service_year AND 1< service_year2   and location =loc;
+
+elsIF   ( tO_NUMBER(TO_CHAR(j_d,'YYYY'))!=yyyy  )  then
+
+select nvl(NUMBER_OF_DAYS_PER_YEAR,0) into l_xx from LKP_LEAVING_SETTINGS    where
+    LEAVE_TYPE=nvl(ty,1)   and to_char(SETTING_YEAR,'yyyy')=TO_CHAR(YYYY)          and
+    CONTRACT_STATUS=cat
+	and ROUND((((to_date(to_char((SYSDATE)))-TO_DATE(j_d))/365))) between service_year and service_year2  and location =loc ;
+
+end if;
+if   status_date!=j_d then
+   x:=round((l_xx/12)* months_between(to_date(to_char(('31-dec-'||yyyy))),STATUS_DATE));
+else
+l_x:=l_xx;
+end if;
+if  new_loc='F' --AND DEP IN (2,24)
+THEN
+l_x:=30-l_x ;
+else
+l_x:=l_x;
+end if;
+x:=x+l_x;
+/******************************************************/
+exit when snap%notfound;
+END LOOP;
+END;
+ELSE
+
+   if    loc1='K'  or (loc1 ='F' and  (dep IN(2,24)))  AND TRANSFER_DATE IS NULL then
+      LOC:=LOC1;
+      STATUS_DATE:=j_d;
+
+	  ELSIF  LOC1='F' AND TO_CHAR(TRANSFER_DATE,'YYYY') =TO_CHAR(SYSDATE,'YYYY')  THEN --IS NOT NULL THEN
+	  LOC:='K';
+      STATUS_DATE:=TRANSFER_DATE ;--J_D;
+	  end if;
+
+end if;
+
+   if   (tO_NUMBER(TO_CHAR(j_d,'YYYY'))=yyyy  )
+   then
+    select nvl(NUMBER_OF_DAYS_PER_YEAR,0) into xx from LKP_LEAVING_SETTINGS where
+    LEAVE_TYPE=nvl(ty,1)and to_char(SETTING_YEAR,'yyyy')=TO_CHAR(YYYY) and
+    CONTRACT_STATUS=cat
+	and 1 >= service_year AND 1< service_year2   and location =loc;
+
+elsIF   ( tO_NUMBER(TO_CHAR(j_d,'YYYY'))!=yyyy  )  then
+LE:=1;
+select nvl(NUMBER_OF_DAYS_PER_YEAR,0) into xx from LKP_LEAVING_SETTINGS    where
+    LEAVE_TYPE=nvl(ty,1)   and to_char(SETTING_YEAR,'yyyy')=TO_CHAR(YYYY)          and
+    CONTRACT_STATUS=cat
+	and ROUND((((to_date(to_char((SYSDATE)))-TO_DATE(j_d))/365))) between service_year and service_year2  and location =loc ;
+LE:=xx ;
+end if;
+if   status_date!=j_d then
+   x:=round((xx/12)* months_between(to_date(to_char(('31-dec-'||yyyy))),STATUS_DATE));
+else
+x:=xx;
+end if;
+if  new_loc='F' --AND DEP IN (2,24)
+THEN
+x:=30-x ;
+else
+x:=x;
+end if;
+ EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+    null;
+
+END;
+
+
+	/*--return else x:=0 ; end if;*/
+   ---setting Previous  Year
+/*begin
+if stat!=1 then
+
+end;*/
+
+/**********************employee history*????????*************************/
+--begin
+
+select  count(*) into t   from history_emp where employee_no=emp and (old_dept in (2,24) or new_dept in (2,24));
+if   t>0  then
+declare
+xx11  number;
+cursor his is
+select  max(chagne_date) change_date,old_dept , new_dept     from  history_emp where employee_no=emp group by old_dept , new_dept ;
+begin
+for i in his loop    change_date:=i.change_date; o_d:=i.old_dept; n_d:=i.new_dept  ;
+ if sn>0 AND TO_CHAR(CHAngE_DATE,'YYYY')=to_char(YYYY) AND old_loc='F' AND o_d in (2,24)  then
+   select nvl(NUMBER_OF_DAYS_PER_YEAR,0) into xx1 from LKP_LEAVING_SETTINGS    where
+    LEAVE_TYPE=nvl(ty,1)   and to_char(SETTING_YEAR,'yyyy')=TO_CHAR(YYYY)          and
+    CONTRACT_STATUS=cat
+	 --   and round(to_number(to_char(sysdate,'yyyy'))-TO_NUMBER(TO_CHAR(j_d,'YYYY')),2)  between service_year and service_year2  and location =loc;
+	and ROUND((((to_date(to_char((SYSDATE))) -TO_DATE(j_d))/365))) between service_year and service_year2  and location =old_loc ;
+	elsif
+
+	TO_CHAR(CHAngE_DATE,'YYYY')=to_char(YYYY)  AND  o_d in (2,24)  and n_d not in (2,24)   then
+   select nvl(NUMBER_OF_DAYS_PER_YEAR,0) into xx1 from LKP_LEAVING_SETTINGS    where
+    LEAVE_TYPE=nvl(ty,1)   and to_char(SETTING_YEAR,'yyyy')=TO_CHAR(YYYY)          and
+    CONTRACT_STATUS=cat
+	 --   and round(to_number(to_char(sysdate,'yyyy'))-TO_NUMBER(TO_CHAR(j_d,'YYYY')),2)  between service_year and service_year2  and location =loc;
+	and ROUND((((to_date(to_char((SYSDATE)))-TO_DATE(j_d))/365))) between service_year and service_year2  and location =loc1 ;
+	end if;
+xx11:=round((xx1/12)* months_between((change_DATE),to_date(to_char(('01-jan-'||yyyy)))));
+pre_days:=pre_days+xx11;
+exit when his%notfound ;
+
+end loop;
+end;
+end if;
+--end ;
+/*******************************************************************************************/
+
+
+/*********************************************************************/
+  BEGIN
+
+    select  NVL(sum(leave_days),0)  into  YEARPREV  from leave_previous1 where
+    employee_no=emp and
+    year1=(YYYY-1)and leave_type=nvl(ty,1);
+
+   EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+    countprev:=0;
+    END;
+
+
+    ---taken this year
+    BEGIN
+   select sum(NVL(NUMBER_OF_DAYS,0)) into taken  from FORM_LEAVES_APPLICATION where
+   to_char(start_date,'yyyy')=to_char(YYYY) and employee_no=emp and form_status in(6,4,2,1,0)
+    and ls_leave_type=nvl(ty,1);
+   EXCEPTION
+     WHEN NO_DATA_FOUND THEN
+    null;
+   END;
+    BEGIN
+   select sum(NVL(NUMBER_OF_DAYS,0)) into sold  from FORM_LEAVES_APPLICATION where
+   to_char(start_date,'yyyy')=to_char(YYYY) and employee_no=emp and form_status in(6,4,2,1,0)
+    and ls_leave_type=nvl(ty,1) and nvl(leave_allowance,0)=1;
+   EXCEPTION
+     WHEN NO_DATA_FOUND THEN
+ sold:=0;
+   END;
+     BEGIN
+   select sum(NVL(NUMBER_OF_DAYS,0)) into leave  from FORM_LEAVES_APPLICATION where
+   to_char(start_date,'yyyy')=to_char(YYYY) and employee_no=emp and form_status in(6,4,2,1,0)
+    and ls_leave_type=nvl(ty,1) and nvl(leave_allowance,0)!=1;
+   EXCEPTION
+     WHEN NO_DATA_FOUND THEN
+leave:=0;
+   END;
+   bal:=nvl(x,0)+nvl(pre_days,0)+nvl(YEARPREV ,0)-nvl( taken,0);
+   if r='C' --AND STAT=1
+   then
+   return  nvl(x,0)+nvl(pre_days,0);
+ --  ELSif r='C' AND STAT!=1 then
+   --RETURN 0 ;
+   elsif r='T' then return  taken;
+   elsif r='P' then
+   return YEARPREV ;
+   elsif r='S' then
+   return sold ;
+   elsif r='L' then
+   return leave ;
+   elsif r='B' then
+   return bal;
+   else return 0;
+   end if;
+END;
