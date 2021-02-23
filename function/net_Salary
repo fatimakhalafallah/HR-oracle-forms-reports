@@ -1,0 +1,19 @@
+FUNCTION net_salary(salary number,tax number, social number) RETURN number IS x number; 
+
+BEGIN
+if nvl(social,0) =1 and nvl(tax,0)=1 then
+  x:=salary;
+  elsif
+  nvl(social,0) =0 and nvl(tax,0)=0 then
+ x:=net_sal(salary);
+
+   elsif  nvl(social,0) =0 and nvl(tax,0)=1 then
+     x:=salary-(salary*.08);
+      elsif  nvl(social,0) =1 and nvl(tax,0)=0 then
+    x:=salary-tax_cal(salary,0);
+      end if;
+      
+return x;
+
+END;
+
