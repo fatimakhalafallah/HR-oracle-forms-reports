@@ -34,3 +34,37 @@ BEGIN
         TOT:=0;
          RETURN TOT;
 END TAX_cal;
+
+FUNCTION       TAX_cal1 (TAXABLE NUMBER,SOCIAL NUMBER)RETURN NUMBER IS
+tmpVar NUMBER;W NUMBER;Q NUMBER;T NUMBER;C NUMBER;N NUMBER;Y NUMBER;Z NUMBER;TOT NUMBER;
+BEGIN
+  T:=((TAXABLE-600)-SOCIAL) ;
+    SELECT tax_ID,PER INTO w ,Q
+      FROM
+      LKP_TAX  WHERE
+     AMNT_FROM<=T AND AMNT_TO>=T ;
+     BEGIN
+     declare
+     cursor tax  IS select tax_id,per ,(AMNT_to-AMNT_from )amnt FROM
+      LKP_TAX  WHERE tax_id<=w-1;
+      begin
+            for i in  tax
+            loop
+            Y:=nvl(Y,0)+(i.amnt*i.per);
+            end loop;
+                     end;
+         EXCEPTION WHEN NO_DATA_FOUND THEN
+         Y:=0;
+         END;
+       SELECT AMNT_to INTO Z
+      FROM
+      lkp_TAX  WHERE
+      TAX_ID=w-1;
+   n:=((t-Z)*Q)+Y;
+   tot :=round(n,2);
+   RETURN TOT;
+   EXCEPTION WHEN NO_DATA_FOUND THEN
+        TOT:=0;
+         RETURN TOT;
+END TAX_cal1;
+
