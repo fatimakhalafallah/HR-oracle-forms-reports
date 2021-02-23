@@ -17,3 +17,94 @@ return x;
 
 END;
 
+FUNCTION      pay_sal (comp  NUMBER,emp_no number,pay_day date) RETURN NUMBER IS
+
+X NUMBER :=0;
+i number:=0;
+SALARY number;f number;a number;
+subgross_salary_out  number;
+gross_salary_out  NUMBER;
+gross_salary_out1  NUMBER;
+tot_ded_out  NUMBER;
+SUB_NET    NUMBER;
+tot_loan_out  NUMBER;
+net_salary_out NUMBER; Xx NUMBER;sal number;
+
+BEGIN
+if comp !=0 then
+
+ SELECT COUNT(*) INTO Xx FROM mp.PAY_PAYROLLS  a WHERE TO_CHAR(a.PAY_DATE,'MM/YYYY')=TO_CHAR(PAY_Day,'MM/YYYY')AND a.PAYROLL_STATUS=1
+  and a.emp_id=emp_no;
+ IF Xx>0 THEN
+ -- message('Sorry you cant get salary, approved');
+sal:=0;
+else
+
+DELETE FROM mp.PAY_PAYROLLS_LINES WHERE PAY_ID IN (SELECT ID FROM mp.PAY_PAYROLLS WHERE PAY_MONTH = TO_NUMBER(TO_CHAR(PAY_DAy,'MM'))
+AND PAY_YEAR = TO_NUMBER(TO_CHAR(PAY_DAy,'YYYY'))and emp_id=emp_no );
+
+DELETE FROM mp.PAY_LOAN_DTL WHERE PAY_ID IN (SELECT ID FROM mp.PAY_PAYROLLS WHERE PAY_MONTH = TO_NUMBER(TO_CHAR(PAY_DAy,'MM'))
+AND PAY_YEAR = TO_NUMBER(TO_CHAR(PAY_Day,'YYYY')) and emp_id=emp_no);
+
+
+DELETE FROM mp.PAY_PAYROLLS WHERE PAY_MONTH = TO_NUMBER(TO_CHAR(PAY_DAy,'MM')) AND
+PAY_YEAR = TO_NUMBER(TO_CHAR(PAY_DAy,'YYYY'))and emp_id=emp_no ;--and comp_no=:comp_no;
+
+
+ commit;
+SALARY:=mp.PAYROLL_PKG.SALARY ( EMP_no                ,
+                      PAY_DAy            ,
+                        1 ,
+                        1       ,
+                         gross_salary_out  ,
+						    gross_salary_out1,
+                       tot_ded_out  ,
+                     --  SUB_NET,
+                       tot_loan_out,
+                       net_salary_out        );
+
+   commit;
+
+sal:=net_salary_out;
+end if;
+  return sal ;
+  else
+  SELECT COUNT(*) INTO Xx FROM PAY_PAYROLLS WHERE TO_CHAR(PAY_DATE,'MM/YYYY')=TO_CHAR(PAY_DAy,'MM/YYYY')AND PAYROLL_STATUS=1;
+	IF Xx>0 THEN
+		null;
+		else
+
+DELETE FROM PAY_PAYROLLS_LINES WHERE PAY_ID IN (SELECT ID FROM PAY_PAYROLLS WHERE PAY_MONTH = TO_NUMBER(TO_CHAR(PAY_DAy,'MM'))
+AND PAY_YEAR = TO_NUMBER(TO_CHAR(PAY_DAy,'YYYY')))and emp_id=emp_no;
+
+DELETE FROM PAY_LOAN_DTL WHERE PAY_ID IN (SELECT ID FROM PAY_PAYROLLS WHERE PAY_MONTH = TO_NUMBER(TO_CHAR(PAY_DAy,'MM'))
+AND PAY_YEAR = TO_NUMBER(TO_CHAR(PAY_DAy,'YYYY')) and emp_id=emp_no);
+
+
+DELETE FROM PAY_PAYROLLS WHERE PAY_MONTH = TO_NUMBER(TO_CHAR(PAY_DAy,'MM')) AND PAY_YEAR = TO_NUMBER(TO_CHAR(PAY_DAy,'YYYY'))and emp_id=emp_no ;--and comp_no=:comp_no;
+
+
+	commit;
+
+
+
+    SALARY:=PAYROLL_PKG.SALARY ( EMP_NO                ,
+                      PAY_DAy            ,
+                       1 ,
+                        1       ,
+                        subgross_salary_out  ,
+                         gross_salary_out  ,
+                       tot_ded_out  ,
+                       SUB_NET,
+                       tot_loan_out,
+                       net_salary_out     );
+
+     				commit;
+
+sal:=net_salary_out;
+end if;
+
+--sal_insert (TO_CHAR(v_Year,'YYYY'),TO_CHAR(v_month,'MM'));
+end if;
+return sal ;
+END;
