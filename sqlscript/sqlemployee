@@ -372,6 +372,39 @@ ALTER TABLE EMPLOYEE_EDUCATION ADD  CONSTRAINT EMP_EDUCATION_FK1
  FOREIGN KEY (EMPLOYEE_NO) 
   REFERENCES PETRO.EMPLOYEES (EMPLOYEE_NO) ;
 
+CREATE TABLE PAY_EOSB ( 
+  EMPLOYEE_NO          NUMBER (8)    NOT NULL, 
+  ESB_DATE             DATE          NOT NULL, 
+  JOB_NO               NUMBER (4), 
+  DEPART_NO            NUMBER (4), 
+  SALARY               NUMBER (10,2), 
+  LEAVE_DAYS           NUMBER (5,2), 
+  EME_LOAN             NUMBER (12,4), 
+  HELTH_LOAN           NUMBER (12,4), 
+  BANK_LOAN            NUMBER (12,4), 
+  OTHER_AMT            NUMBER (12,4), 
+  MONTHS               NUMBER (5,2), 
+  JOIN_DATE            DATE, 
+  REMARKS              VARCHAR2 (300), 
+  LEAVE_AMT            NUMBER (12,4), 
+  EOSB                 NUMBER (12,4), 
+  CREATED_USER         NUMBER (8), 
+  CREATED_DATE         DATE, 
+  BASIC_COLA           NUMBER (8,2), 
+  COMP_AMNT            NUMBER (10,4), 
+  OTHER_LOAN           NUMBER (12,4), 
+  COMP_MON             NUMBER (6,2), 
+  ETY_NO               NUMBER (3), 
+  ESB_PER              NUMBER (7,2), 
+  REMAIN_SAL           NUMBER (8,2), 
+  NET_SALARY           NUMBER (8,2), 
+  MONTH_NOTICE_AMOUNT  NUMBER, 
+  SERVICE_PERIOD       NUMBER, 
+  DAYS                 NUMBER, 
+  PAID_ESB             NUMBER, 
+  CONSTRAINT ESB_PK
+  PRIMARY KEY ( EMPLOYEE_NO, ESB_DATE ) ) ; 
+
 
 
 
